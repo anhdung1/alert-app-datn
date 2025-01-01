@@ -21,16 +21,18 @@ public class UserDevicesService {
     public UserDevicesRepository getUserDevicesRepository() {
         return userDevicesRepository;
     }
-    public void saveUserDevices(Long userId,Long subUserId,Integer deviceId ){
-        Optional<Users> users= usersService.getUsersRepository().findById(userId);
-        Optional<Users> subUsers= usersService.getUsersRepository().findById(subUserId);
-        Optional<Device> device=deviceService.getDeviceRepository().findById(deviceId);
-        if(users.isPresent() &&subUsers.isPresent()&&device.isPresent()){
-            UserDevices userDevices=new UserDevices();
-            userDevices.setDevice(device.get());
-//            userDevices.set
-
-        }
-
+    public Result<String> saveUserDevices(Long userId,String role,Integer deviceId ){
+               if(role.equals("ROLE_TECHNICAL")){
+                   Optional<Users> users= usersService.getUsersRepository().findById(userId);
+                   Optional<Device> device=deviceService.getDeviceRepository().findById(deviceId);
+                   if(users.isPresent() &&device.isPresent()){
+                       UserDevices userDevices=new UserDevices();
+                       userDevices.setDevice(device.get());
+                       userDevicesRepository.save(userDevices);
+                       return new Result<>(null,"",200);
+                   }
+                   return new Result<>(null,"User hoặc thiêt bị không tồn tại",404);
+               }
+        return new Result<>(null,"User hoặc thiêt bị không tồn tại",403);
     }
 }

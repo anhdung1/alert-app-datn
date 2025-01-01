@@ -7,6 +7,7 @@ import com.example.alert.model.UsersInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.example.alert.data_mapper.DeviceLogMapper;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,8 +16,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MqttPublisher {
     private final String BROKER_URL = "ssl://i1731e41.ala.asia-southeast1.emqxsl.com:8883";
-    private final String CLIENT_ID = "spring-boot-client";
+    private final String CLIENT_ID = "spring-boot-client-dung";
     private final String loginTopic="login/client";
     private final String historyTopic="history/client";
     private final String deviceTopic="device/client";
@@ -55,7 +54,7 @@ public class MqttPublisher {
             mqttClient = new MqttClient(BROKER_URL, CLIENT_ID);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setCleanSession(true);
-            options.setUserName("springboot");
+            options.setUserName("dungdung");
             String password="12345678";
             options.setPassword(password.toCharArray());
             mqttClient.connect(options);
@@ -109,22 +108,19 @@ public class MqttPublisher {
     // Nghe và gửi lịch sử cảnh báo
     private void listenAndPublishAlert(String json) throws JsonProcessingException, MqttException {
         AlertRequest alertRequest=objectMapper.readValue(json, AlertRequest.class);
-        List<AlertResponse> alertResponses=alertService.getAlertsByTimeAndType(alertRequest);
-                MqttMessage mqttMessage=new MqttMessage();
-                mqttMessage.setPayload(objectMapper.writeValueAsBytes(alertResponses));
-                mqttClient.publish(historyTopic+"/"+alertRequest.getDeviceId(),mqttMessage);
+        Result<List<AlertResponse>> result=alertService.getAlertsByTimeAndType(alertRequest);
+        MqttMessage mqttMessage=new MqttMessage();
+        if(result.isSuccess()){
+            mqttMessage.setPayload(objectMapper.writeValueAsBytes(result.getData()));
+            mqttClient.publish(historyTopic+"/"+alertRequest.getDeviceId(),mqttMessage);
+        }
+        String error= result.getMessage();
+        mqttMessage.setPayload(error.getBytes());
 
     }
     // Nghe và lưu dữ liệu device log
     public  void listenAndSaveDeviceLog(String json){
-        String[] parts = json.split(";");
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss-dd/MM/yy");
-        DeviceLog deviceLog = new DeviceLog();
-        deviceLog.setDeviceLogId(parts[0]);
-        deviceLog.setCreatedAt(LocalDateTime.parse(parts[1], formatter));
-        deviceLog.setPowerFactor(Float.parseFloat(parts[2]));
-        deviceLog.setVolt(Float.parseFloat(parts[3]));
-        deviceLog.setAmpere(Float.parseFloat(parts[4]));
+        DeviceLog deviceLog = DeviceLogMapper.mapper(json);
         deviceLogService.save(deviceLog);
     }
     public MqttMessage setMqttMessage(Object object) throws JsonProcessingException {
@@ -165,7 +161,7 @@ public class MqttPublisher {
        try{
            objectMapper.registerModule(new JavaTimeModule());
            mqttMessage.setPayload(objectMapper.writeValueAsBytes(alertRequest));
-           mqttClient.publish(loginTopic,mqttMessage);
+           mqttClient.publish(historyTopic,mqttMessage);
            return  true;
        } catch (Exception e) {
            System.out.println(e.toString());
@@ -187,7 +183,7 @@ public class MqttPublisher {
     private void subscribeToTopics() {
         try {
             List<String> topics =new ArrayList<>();
-            topics= List.of("login/client","login/client/123456","history/client","history/client/123456","device/client",deviceLogTopic);
+            topics= List.of("login/client","login/client/1234","history/client","history/client/1234","device/client",deviceLogTopic);
             for (String topic : topics) {
 
                 mqttClient.subscribe(topic, 0);

@@ -13,6 +13,7 @@ public class Device {
     private Integer deviceId;
     private String model;
     private String version;
+    private String deviceName;
     @OneToMany(fetch = FetchType.LAZY,mappedBy = "device")
     private List<UserDevices>userDevices;
     @OneToMany(mappedBy = "device")
@@ -55,5 +56,13 @@ public class Device {
 
     public void setAlerts(List<Alert> alerts) {
         this.alerts = alerts;
+    }
+
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
     }
 }

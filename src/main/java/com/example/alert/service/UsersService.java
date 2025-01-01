@@ -32,7 +32,11 @@ public class UsersService {
     public String encodePassword(String password){
        return passwordEncoder.encode(password);
     }
-    public void createUser(String username, String password,String phone){
+    public Result<String> createUser(String username, String password,String phone){
+        boolean isExists= usersRepository.existsByUsername(username);
+        if(isExists){
+            return new Result<>(null,"Username đã tồn tại",404);
+        }
         Users user = new Users();
         user.setUsername(username);
         Roles role = rolesService.getRolesRepository().findByRole("ROLE_USER");
@@ -40,6 +44,7 @@ public class UsersService {
         user.setPassword(encodePassword(password));
         usersRepository.save(user);
         usersInfoService.saveUsersInfo(user,phone);
+        return new Result<>(null,"Success",200);
     }
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public void createSubUser(String username, String password,Long userId,String phone){

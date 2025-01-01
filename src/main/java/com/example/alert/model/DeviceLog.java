@@ -1,9 +1,10 @@
 package com.example.alert.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
-
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DeviceLog {
     private LocalDateTime createdAt;
     private Float volt;
@@ -23,6 +24,14 @@ public class DeviceLog {
         this.powerFactor=powerFactor;
     }
     public DeviceLog(){};
+
+    public DeviceLog(LocalDateTime createdAt, Float powerFactor, Float volt, Float ampere) {
+        this.createdAt=createdAt;
+        this.powerFactor=powerFactor;
+        this.volt=volt;
+        this.ampere=ampere;
+    }
+
     public Float getPowerFactor() {
         return powerFactor;
     }

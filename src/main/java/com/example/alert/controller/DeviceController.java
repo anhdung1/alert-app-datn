@@ -20,7 +20,6 @@ public class DeviceController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Users user= (Users)authentication.getPrincipal();
         return ResponseEntity.ok(deviceService.
-                getDeviceRepository().
                 findUserDeviceByUserId(user.getUsersId()));
     }
 }
