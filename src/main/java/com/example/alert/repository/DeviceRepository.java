@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface DeviceRepository extends JpaRepository<Device,Integer> {
-    @Query("SELECT new com.example.alert.dtos.DeviceResponse(d.deviceId, d.model, d.version) " +
+    @Query("SELECT new com.example.alert.dtos.DeviceResponse(d.deviceId, d.model, d.version,d.deviceName) " +
             "FROM UserDevices ud " +
             "JOIN ud.device d " +
             "JOIN ud.user u " +

@@ -6,10 +6,12 @@ public class DeviceResponse {
     private Integer deviceId;
     private String model;
     private String version;
-    public DeviceResponse(Integer deviceId,String model,String version){
+    private String deviceName;
+    public DeviceResponse(Integer deviceId,String model,String version,String deviceName){
         this.deviceId=deviceId;
         this.version=version;
         this.model=model;
+        this.deviceName=deviceName;
     }
     public String getVersion() {
         return version;
@@ -33,5 +35,13 @@ public class DeviceResponse {
 
     public void setDeviceId(Integer deviceId) {
         this.deviceId = deviceId;
+    }
+
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
     }
 }

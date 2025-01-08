@@ -6,7 +6,8 @@ public class DeviceLogPowerConsumptionRequest {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private String deviceName;
-
+    private String realDeviceId;
+    private String token;
     public LocalDateTime getStartDate() {
         return startDate;
     }
@@ -29,5 +30,22 @@ public class DeviceLogPowerConsumptionRequest {
 
     public void setDeviceName(String deviceName) {
         this.deviceName = deviceName;
+    }
+
+
+    public String getRealDeviceId() {
+        return realDeviceId;
+    }
+
+    public void setRealDeviceId(String realDeviceId) {
+        this.realDeviceId = realDeviceId;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }
