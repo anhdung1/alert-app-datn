@@ -12,11 +12,11 @@ public class DeviceLog {
     private Float powerFactor;
     private String deviceLogId;
     public  DeviceLog(
-                              @JsonProperty("id") String deviceLogId,
-                      @JsonProperty("createdAt") LocalDateTime createdAt,
-                      @JsonProperty("cosPhi") Float powerFactor,
-                      @JsonProperty("voltage") Float volt,
-                      @JsonProperty("current") Float ampere){
+            @JsonProperty("id") String deviceLogId,
+            @JsonProperty("createdAt") LocalDateTime createdAt,
+            @JsonProperty("cosPhi") Float powerFactor,
+            @JsonProperty("voltage") Float volt,
+            @JsonProperty("current") Float ampere){
         this.createdAt=createdAt;
         this.volt=volt;
         this.ampere=ampere;

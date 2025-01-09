@@ -38,7 +38,7 @@ public class AuthController {
             Users user= usersService.findByUsername(userDetails.getUsername());
             UsersInfo usersInfo=user.getUsersInfo();
             String role=authentication.getAuthorities().iterator().next().getAuthority();
-            String token = jwtUtil.generateToken(authRequest.getUsername(), role);
+            String token = jwtUtil.generateToken(authRequest.getUsername(), role,user.getUsersId());
 //            return  ResponseEntity.ok(authentication.getPrincipal());
             return ResponseEntity.ok(new Result<>(new AuthResponse(role,user.getUsername(),usersInfo.getEmail(),usersInfo.getImageUrl(),usersInfo.getFullName(),usersInfo.getAddress(),user.getUsersId(),token),"",200));
         } catch (AuthenticationException e) {
@@ -54,17 +54,5 @@ public class AuthController {
         }
         usersService.createUser(authRequest.getUsername(), authRequest.getPassword(),authRequest.getPhone());
         return ResponseEntity.ok("User registered successfully");
-    }
-    @PostMapping("/mqtt-login")
-    public ResponseEntity<?> loginWithMqtt(@RequestBody AlertRequest alertRequest){
-        boolean isSuccess=  mqttPublisher.publish(alertRequest);
-        if(isSuccess)return ResponseEntity.ok("");
-        return ResponseEntity.notFound().build();
-    }
-    @PostMapping("/device-log")
-    public ResponseEntity<?> deviceLog(@RequestBody String json){
-        boolean isSuccess=  mqttPublisher.publishLogin(json);
-        if(isSuccess)return ResponseEntity.ok("");
-        return ResponseEntity.notFound().build();
     }
 }

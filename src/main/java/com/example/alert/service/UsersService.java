@@ -76,4 +76,7 @@ public class UsersService {
         }
         return new Result<>(null,"Dữ liệu không tồn tại",404);
     }
+    public Result<?>editPassword(String password){
+
+    }
 }

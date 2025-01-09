@@ -1,6 +1,7 @@
 package com.example.alert.service;
 
 import com.example.alert.consts.ErrorMessage;
+import com.example.alert.consts.Topic;
 import com.example.alert.dtos.*;
 import com.example.alert.model.DeviceLog;
 import com.example.alert.model.UserDevices;
@@ -29,14 +30,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MqttPublisher {
     private final String BROKER_URL = "ssl://i1731e41.ala.asia-southeast1.emqxsl.com:8883";
-    private final String CLIENT_ID = "spring-boot-client-dung";
-    private final String loginTopic="login/client";
-    private final String historyTopic="history/client";
-    private final String deviceTopic="device/client";
-    private final String deviceLogTopic="device-log/client";
-    private final String powerConsumption="power-consumption/client";
-    private final String createUserTopic="create/client";
-    private final String editUserTopic="edit-user-info/client";
+    private final String CLIENT_ID = "spring-boot-client";
     @Autowired
     private DeviceLogService deviceLogService;
     @Autowired
@@ -63,14 +57,15 @@ public class MqttPublisher {
     public MqttPublisher(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         startConnectionChecker();
+
     }
     private void connectToMqttBroker() {
         try {
             mqttClient = new MqttClient(BROKER_URL, CLIENT_ID);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setCleanSession(true);
-            options.setUserName("dungdung");
-            String password="12345678";
+            options.setUserName("luuvandung");
+            String password="Dungdung01";
             options.setPassword(password.toCharArray());
             mqttClient.connect(options);
             System.out.println("Connected to MQTT broker successfully.");
@@ -99,25 +94,25 @@ public class MqttPublisher {
         System.out.println("Received message from topic " + topic + ": " + json);
         try {
 
-            if(topic.equals(loginTopic)){
+            if(topic.equals(Topic.loginTopic)){
                listenMessageLoginTopic(json);
             }
-            if(topic.equals(historyTopic)){
+            if(topic.equals(Topic.historyTopic)){
                 listenAndPublishAlert(json);
             }
-            if(topic.equals(deviceTopic)){
+            if(topic.equals(Topic.deviceTopic)){
                 listenAndPublishDevice(json);
             }
-            if(topic.equals(deviceLogTopic)){
+            if(topic.equals(Topic.deviceLogTopic)){
                 listenAndSaveDeviceLog(json);
             }
-            if(topic.equals(powerConsumption)){
+            if(topic.equals(Topic.powerConsumption)){
                 listenAndPublishPowerConsumption(json);
             }
-            if(topic.equals(createUserTopic)){
+            if(topic.equals(Topic.createUserTopic)){
                 listenAndPublishCreateUser(json);
             }
-            if(topic.equals(editUserTopic)){
+            if(topic.equals(Topic.editUserTopic)){
                 listenAndPublishEditUserInfo(json);
             }
             SecurityContextHolder.clearContext();
@@ -131,7 +126,7 @@ public class MqttPublisher {
         UpdateUserInfo updateUserInfo=objectMapper.readValue(json,UpdateUserInfo.class);
         boolean isValidateSuccess= jwtAuthenticationFilter.handleToken(updateUserInfo.getToken());
         if(!isValidateSuccess){
-            mqttClient.publish(editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
+            mqttClient.publish(Topic.editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
         }
         else {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -143,10 +138,10 @@ public class MqttPublisher {
                         updateUserInfo.getImageUrl(),
                         updateUserInfo.getEmail(),
                         updateUserInfo.getUsersId());
-                mqttClient.publish(editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(result));
+                mqttClient.publish(Topic.editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(result));
             }
             else {
-                mqttClient.publish(editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.userIncorrect,403)));
+                mqttClient.publish(Topic.editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.userIncorrect,403)));
             }
         }
     }
@@ -154,30 +149,30 @@ public class MqttPublisher {
     public void listenAndPublishDevice(String json) throws JsonProcessingException, MqttException {
         DeviceRequest deviceRequest=objectMapper.readValue(json,DeviceRequest.class);
         Result<List<DeviceResponse>> deviceResponse=deviceService.findUserDeviceByUserId(deviceRequest.getUserId());
-        mqttClient.publish(deviceTopic+"/"+deviceRequest.getDeviceId(),setPayload(deviceResponse));
+        mqttClient.publish(Topic.deviceTopic+"/"+deviceRequest.getDeviceId(),setPayload(deviceResponse));
     }
     // Nghe và gửi lịch sử cảnh báo
     private void listenAndPublishAlert(String json) throws JsonProcessingException, MqttException {
         AlertRequest alertRequest=objectMapper.readValue(json, AlertRequest.class);
         boolean isValidateSuccess=jwtAuthenticationFilter.handleToken(alertRequest.getToken());
         if(!isValidateSuccess){
-            mqttClient.publish(historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
+            mqttClient.publish(Topic.historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
         }else {
            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Users users=(Users)authentication.getPrincipal();
             if(users.getUsersId().equals(alertRequest.getUserId())){
                 Result<List<AlertResponse>> result=alertService.getAlertsByTimeAndType(alertRequest);
-                mqttClient.publish(historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(result));
+                mqttClient.publish(Topic.historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(result));
             }
             else {
-                mqttClient.publish(historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.userIncorrect,403)));
+                mqttClient.publish(Topic.historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.userIncorrect,403)));
             }
         }
     }
     // Nghe và tạo tài khoản người dùng
     private void listenAndPublishCreateUser(String json) throws JsonProcessingException, MqttException {
         CreateUserRequest createUserRequest=objectMapper.readValue(json,CreateUserRequest.class);
-        final  String createTopicResponse=createUserTopic + "/"+createUserRequest.getRealDeviceId();
+        final  String createTopicResponse=Topic.createUserTopic + "/"+createUserRequest.getRealDeviceId();
         boolean isValidateSuccess= jwtAuthenticationFilter.handleToken(createUserRequest.getToken());
         if (!isValidateSuccess){
             mqttClient.publish(createTopicResponse,setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
@@ -196,7 +191,7 @@ public class MqttPublisher {
     // Nghe và gửi dữ liệu lượng điện sử dụng
     public void listenAndPublishPowerConsumption(String json) throws IOException, MqttException {
             DeviceLogPowerConsumptionRequest deviceLogPowerConsumptionRequest=objectMapper.readValue(json, DeviceLogPowerConsumptionRequest.class);
-            String topicResponse=powerConsumption + "/" +deviceLogPowerConsumptionRequest.getRealDeviceId();
+            String topicResponse=Topic.powerConsumption + "/" +deviceLogPowerConsumptionRequest.getRealDeviceId();
             boolean isValidateSuccess= jwtAuthenticationFilter.handleToken(deviceLogPowerConsumptionRequest.getToken());
             if(!isValidateSuccess){
                 mqttClient.publish(topicResponse,setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
@@ -211,10 +206,10 @@ public class MqttPublisher {
                                 deviceLogPowerConsumptionRequest.getEndDate(),
                                 deviceLogPowerConsumptionRequest.getDeviceName()
                         );
-                        mqttClient.publish(powerConsumption + "/" +deviceLogPowerConsumptionRequest.getRealDeviceId(),setPayload(result));
+                        mqttClient.publish(Topic.powerConsumption + "/" +deviceLogPowerConsumptionRequest.getRealDeviceId(),setPayload(result));
                     }
                     else {
-                        mqttClient.publish(powerConsumption + "/" +deviceLogPowerConsumptionRequest.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.noAccess,403)));
+                        mqttClient.publish(Topic.powerConsumption + "/" +deviceLogPowerConsumptionRequest.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.noAccess,403)));
                     }
                 }
             }
@@ -232,7 +227,8 @@ public class MqttPublisher {
                new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
            UserDetails userDetails=(UserDetails)authentication.getPrincipal();
            String role=authentication.getAuthorities().iterator().next().getAuthority();
-           String token = jwtUtil.generateToken(authRequest.getUsername(), role);
+           Users users= usersService.findByUsername(userDetails.getUsername());
+           String token = jwtUtil.generateToken(authRequest.getUsername(), role, users.getUsersId());
            Users user=usersService.findByUsername(userDetails.getUsername());
            UsersInfo usersInfo=user.getUsersInfo();
            AuthResponse authResponse=new AuthResponse(role,user.getUsername(),
@@ -242,42 +238,15 @@ public class MqttPublisher {
                    usersInfo.getAddress(),
                    user.getUsersId(),token);
 
-           mqttClient.publish(loginTopic+"/"+ authRequest.getDeviceId(),setPayload(authResponse));}
+           mqttClient.publish(Topic.loginTopic+"/"+ authRequest.getDeviceId(),setPayload(authResponse));}
        catch (Exception e) {
-           mqttClient.publish(loginTopic+"/"+ authRequest.getDeviceId(),setPayload(new Result<>(null,"Thông tin tài khoảng hoặc mật khẩu không chính xác",401)));
+           mqttClient.publish(Topic.loginTopic+"/"+ authRequest.getDeviceId(),setPayload(new Result<>(null,"Thông tin tài khoảng hoặc mật khẩu không chính xác",401)));
        }
-    }
-    // Thử publish
-    public boolean  publish(AlertRequest alertRequest)  {
-        MqttMessage mqttMessage=new MqttMessage();
-       try{
-           objectMapper.registerModule(new JavaTimeModule());
-           mqttMessage.setPayload(objectMapper.writeValueAsBytes(alertRequest));
-           mqttClient.publish(historyTopic,mqttMessage);
-           return  true;
-       } catch (Exception e) {
-           System.out.println(e.toString());
-           return false;
-       }
-    }
-    public boolean  publishLogin(String json)  {
-        MqttMessage mqttMessage=new MqttMessage();
-        try{
-            objectMapper.registerModule(new JavaTimeModule());
-            mqttMessage.setPayload(json.getBytes());
-            mqttClient.publish(deviceLogTopic,mqttMessage);
-            return  true;
-        } catch (Exception e) {
-            System.out.println(e.toString());
-            return false;
-        }
     }
     private void subscribeToTopics() {
         try {
-            List<String> topics =new ArrayList<>();
-            topics= List.of("login/client","history/client","device/client",createUserTopic,deviceLogTopic,editUserTopic);
+            List<String> topics = new ArrayList<>(Topic.getAllTopics());
             for (String topic : topics) {
-
                 mqttClient.subscribe(topic, 0);
                 System.out.println("Subscribed to topic: " + topic);
             }
@@ -286,26 +255,6 @@ public class MqttPublisher {
         }
     }
 
-
-//    private void startConnectionCheckerToTopic() {
-//        scheduler.scheduleAtFixedRate(() -> {
-//            long currentTime = System.currentTimeMillis();
-//            lastMessageTimeByTopic.entrySet().removeIf(entry -> {
-//                String topic = entry.getKey();
-//                long messageTime = entry.getValue();
-//                if (currentTime - messageTime > 30000) {
-//                    System.out.println("Lost connection to topic: " + topic);
-//                    try {
-//                        mqttClient.subscribe(topic, 0);
-//                    } catch (MqttException e) {
-//                        System.out.println("Failed to reconnect to topic: " + topic);
-//                    }
-//                    return true;
-//                }
-//                return false;
-//            });
-//        }, 0, 30, TimeUnit.SECONDS);
-//    }
     public MqttMessage setPayload(Object object) throws JsonProcessingException {
         MqttMessage mqttMessage=new MqttMessage();
         mqttMessage.setPayload(objectMapper.writeValueAsBytes(object));

@@ -16,6 +16,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -50,16 +51,12 @@ public class DeviceLogService {
         }
 
     }
-
-//    public void getFile() throws IOException {
-//        String data=FileUtil.getFileTxt("C:/Users/luutu/Documents/Zalo Received Files/141124_Nha rieng.txt");
-//        mapperDeviceLog(data);
-//    }
     public void save( DeviceLog deviceLog) {
         try {
             String year = String.valueOf(deviceLog.getCreatedAt().getYear());
             String month = String.format("%02d", deviceLog.getCreatedAt().getMonthValue());
-            String folderPath = BASE_PATH + deviceLog.getDeviceLogId() + "/" + year + "/" + month;
+            String day=String.valueOf(deviceLog.getCreatedAt().getDayOfMonth());
+            String folderPath = BASE_PATH + deviceLog.getDeviceLogId() + "/" + day + "/"  + year + "/" + month;
             String filePath = folderPath + "/deviceLog.json";
             if (!FileUtil.existsDirectories(folderPath)) {
                 FileUtil.createDirectories(folderPath);
@@ -150,38 +147,36 @@ public class DeviceLogService {
             throw new RuntimeException(e);
         }
     }
-    public Result<Float> powerConsumption(LocalDateTime startDate, LocalDateTime endDate,String deviceName) throws IOException {
-        if(startDate.isAfter(endDate)){
-            return new Result<>(null,"Dữ liệu không hợp lệ",400);
+    public Result<Float> powerConsumption(LocalDateTime startDate, LocalDateTime endDate, String deviceName) throws IOException {
+        if (startDate.isAfter(endDate)) {
+            return new Result<>(null, "Dữ liệu không hợp lệ", 400);
         }
-        float powerConsumptions=0F;
-        String startYear=String.valueOf(startDate.getYear());
-        String endYear=String.valueOf(endDate.getYear());
-        String startMonth=String.valueOf(startDate.getMonthValue());
-        String endMonth=String.valueOf(startDate.getMonthValue());
-                JsonFactory factory = new JsonFactory();
-                for(int year=Integer.parseInt(startYear);year<=Integer.parseInt(endYear);year++){
-                    for(int month=Integer.parseInt(startMonth);month<=Integer.parseInt(endMonth);month++){
-                        String filePath=BASE_PATH + deviceName+ "/" + year + "/" + month + "/" +"deviceLog.json";
-                        File deviceLogs=FileUtil.getFile(filePath);
-                        try (JsonParser parser = factory.createParser(deviceLogs)) {
-                            if (parser.nextToken() == JsonToken.START_ARRAY) {
-                                while (parser.nextToken() != JsonToken.END_ARRAY) {
-                                    DeviceLog deviceLog = objectMapper.readValue(parser, DeviceLog.class);
-                                    if(startDate.isBefore(deviceLog.getCreatedAt())){
-                                        powerConsumptions+= deviceLog.getVolt()*deviceLog.getPowerFactor()*deviceLog.getAmpere();
-                                    }
-                                    if(endDate.isBefore(deviceLog.getCreatedAt())){
-                                        return new Result<>(powerConsumptions/3600000,"",200);
-                                    }
-                                }
-                            }
-                        } catch (JsonParseException e) {
-                            return  new Result<>(null,"Lỗi khi xử lí dữ liệu",404);
-                        }
+
+        float totalPowerConsumption = 0F;
+        JsonFactory factory = new JsonFactory();
+        LocalDate current = startDate.toLocalDate();
+        LocalDate end = endDate.toLocalDate();
+
+        while (!current.isAfter(end)) {
+            String filePath = String.format("%s%s/%d/%d/%d/deviceLog.json", BASE_PATH, deviceName, current.getYear(), current.getMonthValue(),current.getDayOfMonth());
+            File deviceLogs = FileUtil.getFile(filePath);
+            if(!deviceLogs.exists()){
+                current =current.plusDays(1);
+                continue;
+            }
+            try (JsonParser parser = factory.createParser(deviceLogs)) {
+                if (parser.nextToken() == JsonToken.START_ARRAY) {
+                    while (parser.nextToken() != JsonToken.END_ARRAY) {
+                        DeviceLog deviceLog = objectMapper.readValue(parser, DeviceLog.class);
+                        totalPowerConsumption += deviceLog.getVolt() * deviceLog.getPowerFactor() * deviceLog.getAmpere();
                     }
                 }
-        return new Result<>(null,"Lỗi khi xử lí dữ liệu",404);
+            } catch (JsonParseException e) {
+                return new Result<>(null, "Lỗi khi xử lí dữ liệu", 404);
+            }
+            current = current.plusDays(1);
+        }
+        return new Result<>(totalPowerConsumption / 3600000, "", 200);
     }
 
 }
