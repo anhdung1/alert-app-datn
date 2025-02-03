@@ -14,7 +14,7 @@ public class Device {
     private String model;
     private String version;
     private String deviceName;
-    @OneToMany(fetch = FetchType.LAZY,mappedBy = "device")
+    @OneToMany(fetch = FetchType.EAGER,mappedBy = "device")
     private List<UserDevices>userDevices;
     @OneToMany(mappedBy = "device")
     private List<Alert> alerts;

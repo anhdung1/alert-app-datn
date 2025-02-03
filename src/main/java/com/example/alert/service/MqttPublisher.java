@@ -9,7 +9,6 @@ import com.example.alert.model.Users;
 import com.example.alert.model.UsersInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.example.alert.data_mapper.DeviceLogMapper;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +16,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MqttPublisher {
     private final String BROKER_URL = "ssl://i1731e41.ala.asia-southeast1.emqxsl.com:8883";
-    private final String CLIENT_ID = "spring-boot-client";
+    private final String CLIENT_ID = "spring-boot-client-23";
     @Autowired
     private DeviceLogService deviceLogService;
     @Autowired
@@ -64,8 +62,8 @@ public class MqttPublisher {
             mqttClient = new MqttClient(BROKER_URL, CLIENT_ID);
             MqttConnectOptions options = new MqttConnectOptions();
             options.setCleanSession(true);
-            options.setUserName("luuvandung");
-            String password="Dungdung01";
+            options.setUserName("emqx");
+            String password="dungdung";
             options.setPassword(password.toCharArray());
             mqttClient.connect(options);
             System.out.println("Connected to MQTT broker successfully.");
@@ -115,10 +113,27 @@ public class MqttPublisher {
             if(topic.equals(Topic.editUserTopic)){
                 listenAndPublishEditUserInfo(json);
             }
+            if(topic.equals(Topic.changePasswordTopic)){
+                listenAndUpdatePassword( json);
+            }
             SecurityContextHolder.clearContext();
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
             System.out.println(e.toString());
+        }
+    }
+    // Nghe và update password
+    public void listenAndUpdatePassword(String json) throws JsonProcessingException, MqttException {
+        UpdatePassword updatePassword=objectMapper.readValue(json,UpdatePassword.class);
+        boolean isValidateSuccess= jwtAuthenticationFilter.handleToken(updatePassword.getToken());
+        if(!isValidateSuccess){
+            mqttClient.publish(Topic.changePasswordTopic+"/"+updatePassword.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
+        }
+        else {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Users users=(Users)authentication.getPrincipal();
+            Result<?>result=usersService.editPassword(updatePassword.getPassword(), updatePassword.getNewPassword(), users.getUsername());
+            mqttClient.publish(Topic.changePasswordTopic+"/"+updatePassword.getRealDeviceId(),setPayload(result));
         }
     }
     // Nghe và update user information     : Đã sửa
@@ -131,18 +146,13 @@ public class MqttPublisher {
         else {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Users users=(Users)authentication.getPrincipal();
-            if(users.getUsersId().equals(updateUserInfo.getUsersId())){
                 Result<?> result=usersService.editUserInfo(updateUserInfo.getPhone(),
                         updateUserInfo.getAddress(),
                         updateUserInfo.getFullName(),
                         updateUserInfo.getImageUrl(),
                         updateUserInfo.getEmail(),
-                        updateUserInfo.getUsersId());
+                        users.getUsername());
                 mqttClient.publish(Topic.editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(result));
-            }
-            else {
-                mqttClient.publish(Topic.editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.userIncorrect,403)));
-            }
         }
     }
     // Nghe và gửi thiết bị theo user
@@ -160,13 +170,8 @@ public class MqttPublisher {
         }else {
            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Users users=(Users)authentication.getPrincipal();
-            if(users.getUsersId().equals(alertRequest.getUserId())){
-                Result<List<AlertResponse>> result=alertService.getAlertsByTimeAndType(alertRequest);
+                Result<List<AlertResponse>> result=alertService.getAlertsByTimeAndType(alertRequest,users.getUsername());
                 mqttClient.publish(Topic.historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(result));
-            }
-            else {
-                mqttClient.publish(Topic.historyTopic+"/"+alertRequest.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.userIncorrect,403)));
-            }
         }
     }
     // Nghe và tạo tài khoản người dùng

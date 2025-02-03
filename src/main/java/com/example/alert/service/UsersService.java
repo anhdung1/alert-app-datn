@@ -1,5 +1,6 @@
 package com.example.alert.service;
 
+import com.example.alert.consts.ErrorMessage;
 import com.example.alert.model.Roles;
 import com.example.alert.model.Users;
 import com.example.alert.model.UsersInfo;
@@ -12,7 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 
 @Service
 public class UsersService {
@@ -62,10 +62,10 @@ public class UsersService {
         usersRepository.save(user);
         usersInfoService.saveUsersInfo(user,phone);
     }
-    public Result<?> editUserInfo(String phone, String address, String fullName, String imageUrl, String email,Long userId){
-        Optional<Users> users=getUsersRepository().findById(userId);
-        if(users.isPresent()){
-            UsersInfo usersInfoUpdate=users.get().getUsersInfo();
+    public Result<?> editUserInfo(String phone, String address, String fullName, String imageUrl, String email,String username){
+        Users users=getUsersRepository().findByUsername(username);
+        if(users!=null){
+            UsersInfo usersInfoUpdate=users.getUsersInfo();
             usersInfoUpdate.setPhone(phone  );
             usersInfoUpdate.setAddress(address);
             usersInfoUpdate.setEmail(email);
@@ -74,9 +74,18 @@ public class UsersService {
             usersInfoService.getUsersInfoRepository().save(usersInfoUpdate);
             return new Result<>(null,"Success",200);
         }
-        return new Result<>(null,"Dữ liệu không tồn tại",404);
+        return new Result<>(null,ErrorMessage.usernameIncorrect,404);
     }
-    public Result<?>editPassword(String password){
-
+    public Result<?>editPassword(String password,String newPassword,String username){
+        Users users=usersRepository.findByUsername(username);
+        if(users==null)
+            return new Result<>(null, ErrorMessage.passwordIncorrect,401);
+        String encodedPassword=users.getPassword();
+        boolean isPasswordMatch = passwordEncoder.matches(password, encodedPassword);
+        if(!isPasswordMatch)
+            return new Result<>(null, ErrorMessage.passwordIncorrect,401);
+        users.setPassword(passwordEncoder.encode(newPassword));
+        usersRepository.save(users);
+        return new Result<>(null,ErrorMessage.success,200);
     }
 }

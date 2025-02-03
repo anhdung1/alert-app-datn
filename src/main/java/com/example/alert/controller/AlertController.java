@@ -20,7 +20,7 @@ public class AlertController {
     private AlertService alertService;
     @GetMapping("/by-type")
     public ResponseEntity<?> getAlertByType(@RequestBody AlertRequest alertRequest){
-        Result<List<AlertResponse>> result=alertService.getAlertsByTimeAndType(alertRequest);
+        Result<List<AlertResponse>> result=alertService.getAlertsByTimeAndType(alertRequest,"");
         if(!result.isSuccess())return ResponseEntity.notFound().build();
         return ResponseEntity.ok(result);
     }
