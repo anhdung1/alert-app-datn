@@ -30,7 +30,6 @@ public class DeviceLogService {
     private static final String BASE_PATH = "D://data/";
     private final ObjectMapper objectMapper;
 
-    // Khởi tạo ObjectMapper một lần
     public DeviceLogService() {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());

@@ -1,5 +1,7 @@
 package com.example.alert.service;
 
+import com.example.alert.consts.AlertConst;
+import com.example.alert.consts.Data;
 import com.example.alert.consts.ErrorMessage;
 import com.example.alert.consts.Topic;
 import com.example.alert.dtos.*;
@@ -49,7 +51,8 @@ public class MqttPublisher {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final ObjectMapper objectMapper;
-
+    final Map<String, List<Float>> sensorData = new HashMap<>();
+    final Map<String,List<Float>> deltaMap=new HashMap<>();
 
     @Autowired
     public MqttPublisher(ObjectMapper objectMapper) {
@@ -91,7 +94,6 @@ public class MqttPublisher {
         String json = new String(message.getPayload());
         System.out.println("Received message from topic " + topic + ": " + json);
         try {
-
             if(topic.equals(Topic.loginTopic)){
                listenMessageLoginTopic(json);
             }
@@ -222,7 +224,63 @@ public class MqttPublisher {
     // Nghe và lưu dữ liệu device log
     public  void listenAndSaveDeviceLog(String json){
         DeviceLog deviceLog = DeviceLogMapper.mapper(json);
+        if(deviceLog.getAmpere()<=0.1)return;
         deviceLogService.save(deviceLog);
+        String keyData=deviceLog.getDeviceLogId();
+        float power=deviceLog.getAmpere()*deviceLog.getVolt();
+        List<Float> data= sensorData.merge(keyData, new ArrayList<>(), (oldList, _) -> {
+            oldList.add(power);
+            return oldList;
+        });
+
+        final int size=data.size();
+        System.out.println(size);
+        if(size>=2){
+            Float delta= (data.get(size-1)-data.get(size-2))/ data.get(size-1);
+            deltaMap.get(deviceLog.getDeviceLogId()).add(delta);
+            System.out.println(deltaMap.get(deviceLog.getDeviceLogId()));
+//            List<Float> deltaList = new ArrayList<>(deltaMap.get(deviceLog.getDeviceLogId()));
+//            if(deltaList.isEmpty()){
+//                deltaMap.computeIfAbsent(keyData,k->new ArrayList<>()).add(delta);
+//            }
+//            else {
+//                if(deltaList.getLast()*delta>0){
+//                    deltaMap.computeIfAbsent(keyData,k->new ArrayList<>()).add(delta);
+//                }
+//                else {
+//                    float deltaSum=0;
+//                    for (Float aFloat : deltaList) {
+//                        deltaSum += aFloat;
+//                    }
+//                    if(Math.abs(deltaSum)>=Data.percentPower && power>=Data.backgroundPower){
+//                        String type;
+//                        String message;
+//                        if(deltaSum>=Data.percentPower){
+//                             type= AlertConst.Type.TurnOn.getValue();
+//                             message="Turn On";
+//                        }else {
+//                             type=AlertConst.Type.TurnOff.getValue();
+//                             message="Turn Off";
+//                        }
+//                        float powerDifference=data.getLast()-data.getFirst();
+//                        alertService.save(type,message + powerDifference,keyData);
+//                        System.out.println(powerDifference);
+//                        // TODO: Push Notification here
+//                    }
+//                    else{
+//                        List<Float>lastTwo=sensorData.get(keyData).subList(size-2,size);
+//                        sensorData.get(keyData).clear();
+//                        sensorData.get(keyData).addAll(lastTwo);
+//                        deltaMap.get(keyData).clear();
+//                        deltaMap.get(keyData).add(delta);
+//                        System.out.println("vòng lặp mới");
+//                        System.out.println("Size: "+size);
+//
+//                    }
+//                }
+//            }
+        }
+
     }
     // Nghe và gửi dữ liệu login
     private void listenMessageLoginTopic(String json) throws JsonProcessingException, MqttException {
