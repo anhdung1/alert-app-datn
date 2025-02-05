@@ -13,6 +13,9 @@ public class Topic {
     public final static  String createUserTopic="create/client";
     public final static  String editUserTopic="edit-user-info/client";
     public final static  String changePasswordTopic="edit-password/client";
+    public final static  String deleteUserTopic="delete-user/client";
+    public final static  String getListUserTopic= "get-list-user/client";
+    // Không thêm nếu không dùng
     public static List<String> getAllTopics() {
         List<String> topics = new ArrayList<>();
         Field[] fields = Topic.class.getDeclaredFields();

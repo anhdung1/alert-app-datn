@@ -11,10 +11,12 @@ public class AuthResponse {
     private String imageUrl;
     private String fullName;
     private String address;
+    private String phoneNumber;
     private Long userId;
     private String token;
-    public AuthResponse(String role,String username,String email, String imageUrl, String fullName, String address,Long userId,String token){
+    public AuthResponse(String role,String username,String email, String imageUrl, String fullName, String address,Long userId,String token,String phoneNumber){
         this.role=role;
+        this.phoneNumber=phoneNumber;
         this.username=username;
         this.userId=userId;
         this.address=address;
@@ -90,5 +92,13 @@ public class AuthResponse {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

@@ -1,6 +1,7 @@
 package com.example.alert.service;
 
 import com.example.alert.dtos.DeviceLogRequest;
+import com.example.alert.dtos.PowerSumResponse;
 import com.example.alert.model.DeviceLog;
 import com.example.alert.util.FileUtil;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -55,7 +56,7 @@ public class DeviceLogService {
             String year = String.valueOf(deviceLog.getCreatedAt().getYear());
             String month = String.format("%02d", deviceLog.getCreatedAt().getMonthValue());
             String day=String.valueOf(deviceLog.getCreatedAt().getDayOfMonth());
-            String folderPath = BASE_PATH + deviceLog.getDeviceLogId() + "/" + day + "/"  + year + "/" + month;
+            String folderPath = BASE_PATH + deviceLog.getDeviceLogId() + "/" + year + "/"  + month + "/" + day;
             String filePath = folderPath + "/deviceLog.json";
             if (!FileUtil.existsDirectories(folderPath)) {
                 FileUtil.createDirectories(folderPath);
@@ -146,17 +147,16 @@ public class DeviceLogService {
             throw new RuntimeException(e);
         }
     }
-    public Result<Float> powerConsumption(LocalDateTime startDate, LocalDateTime endDate, String deviceName) throws IOException {
+    public Result<List<PowerSumResponse>> powerConsumption(LocalDate startDate, LocalDate endDate, String deviceName) throws IOException {
         if (startDate.isAfter(endDate)) {
             return new Result<>(null, "Dữ liệu không hợp lệ", 400);
         }
-
-        float totalPowerConsumption = 0F;
+        List<PowerSumResponse> powerSumResponseList= new ArrayList<>();
         JsonFactory factory = new JsonFactory();
-        LocalDate current = startDate.toLocalDate();
-        LocalDate end = endDate.toLocalDate();
+        LocalDate current = startDate;
 
-        while (!current.isAfter(end)) {
+        while (!current.isAfter(endDate)) {
+            float totalPowerConsumption = 0F;
             String filePath = String.format("%s%s/%d/%d/%d/deviceLog.json", BASE_PATH, deviceName, current.getYear(), current.getMonthValue(),current.getDayOfMonth());
             File deviceLogs = FileUtil.getFile(filePath);
             if(!deviceLogs.exists()){
@@ -167,15 +167,19 @@ public class DeviceLogService {
                 if (parser.nextToken() == JsonToken.START_ARRAY) {
                     while (parser.nextToken() != JsonToken.END_ARRAY) {
                         DeviceLog deviceLog = objectMapper.readValue(parser, DeviceLog.class);
-                        totalPowerConsumption += deviceLog.getVolt() * deviceLog.getPowerFactor() * deviceLog.getAmpere();
+                        totalPowerConsumption += deviceLog.getVolt() * deviceLog.getAmpere();
                     }
                 }
             } catch (JsonParseException e) {
                 return new Result<>(null, "Lỗi khi xử lí dữ liệu", 404);
             }
+            PowerSumResponse powerSumResponse=new PowerSumResponse();
+            powerSumResponse.setPowerSum(totalPowerConsumption);
+            powerSumResponse.setDate(current);
+            powerSumResponseList.add(powerSumResponse);
             current = current.plusDays(1);
         }
-        return new Result<>(totalPowerConsumption / 3600000, "", 200);
+        return new Result<>(powerSumResponseList, "", 200);
     }
 
 }

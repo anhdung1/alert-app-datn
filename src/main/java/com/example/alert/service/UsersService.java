@@ -6,12 +6,15 @@ import com.example.alert.model.Users;
 import com.example.alert.model.UsersInfo;
 import com.example.alert.repository.RolesRepository;
 import com.example.alert.repository.UsersRepository;
+import org.apache.logging.log4j.message.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 
 @Service
@@ -87,5 +90,12 @@ public class UsersService {
         users.setPassword(passwordEncoder.encode(newPassword));
         usersRepository.save(users);
         return new Result<>(null,ErrorMessage.success,200);
+    }
+    public void deleteUser(Long userId){
+        usersRepository.deleteById(userId);
+    }
+    public Result<List<Users>> getAllUsers(){
+        List<Users> userList = usersRepository.findAll();
+        return new Result<>(userList, ErrorMessage.success,200);
     }
 }
