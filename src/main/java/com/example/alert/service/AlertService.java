@@ -3,6 +3,8 @@ package com.example.alert.service;
 import com.example.alert.consts.ErrorMessage;
 import com.example.alert.dtos.AlertRequest;
 import com.example.alert.dtos.AlertResponse;
+import com.example.alert.model.Alert;
+import com.example.alert.model.Device;
 import com.example.alert.model.Users;
 import com.example.alert.repository.AlertRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -20,7 +23,23 @@ public class AlertService {
     private AlertRepository alertRepository;
     @Autowired
     private UsersService usersService;
-    public Result<List<AlertResponse>> getAlertsByTimeAndType(AlertRequest alertRequest,String username) {
+    @Autowired
+    private DeviceService deviceService;
+    public AlertRepository getAlertRepository() {
+        return alertRepository;
+    }
+    public void save(String type, String message, String deviceLogId){
+        Alert alert=new Alert();
+        Device device=deviceService.getDeviceRepository().findByDeviceName(deviceLogId);
+        if(device!=null){
+            alert.setDevice(device);
+            alert.setType(type);
+            alert.setMessage(message);
+            alert.setCreateAt(LocalDateTime.now());
+            alertRepository.save(alert);
+        }
+    }
+    public Result<List<AlertResponse>> getAlertsByTimeAndType(AlertRequest alertRequest, String username) {
         Users user=usersService.getUsersRepository().findByUsername(username);
         LocalDate startDate=alertRequest.getStartDate();
         LocalDate endDate=alertRequest.getStartDate();

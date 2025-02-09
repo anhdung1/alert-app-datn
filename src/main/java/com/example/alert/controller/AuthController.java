@@ -40,7 +40,7 @@ public class AuthController {
             String role=authentication.getAuthorities().iterator().next().getAuthority();
             String token = jwtUtil.generateToken(authRequest.getUsername(), role,user.getUsersId());
 //            return  ResponseEntity.ok(authentication.getPrincipal());
-            return ResponseEntity.ok(new Result<>(new AuthResponse(role,user.getUsername(),usersInfo.getEmail(),usersInfo.getImageUrl(),usersInfo.getFullName(),usersInfo.getAddress(),user.getUsersId(),token),"",200));
+            return ResponseEntity.ok(new Result<>(new AuthResponse(role,user.getUsername(),usersInfo.getEmail(),usersInfo.getImageUrl(),usersInfo.getFullName(),usersInfo.getAddress(),user.getUsersId(),token,usersInfo.getPhone()),"",200));
         } catch (AuthenticationException e) {
             return ResponseEntity.status(401).body("Username or password is incorrect");
         }

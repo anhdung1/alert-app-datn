@@ -15,4 +15,5 @@ public interface DeviceRepository extends JpaRepository<Device,Integer> {
             "JOIN ud.user u " +
             "WHERE u.usersId = :usersId")
     List<DeviceResponse> findUserDeviceByUserId(@Param("usersId") Long usersId);
+    Device findByDeviceName(String deviceName);
 }

@@ -1,5 +1,7 @@
 package com.example.alert.service;
 
+import com.example.alert.consts.AlertConst;
+import com.example.alert.consts.Data;
 import com.example.alert.consts.ErrorMessage;
 import com.example.alert.consts.Topic;
 import com.example.alert.dtos.*;
@@ -49,7 +51,8 @@ public class MqttPublisher {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final ObjectMapper objectMapper;
-
+    final Map<String, List<Float>> sensorData = new HashMap<>();
+    final Map<String,List<Float>> deltaMap=new HashMap<>();
 
     @Autowired
     public MqttPublisher(ObjectMapper objectMapper) {
@@ -91,7 +94,6 @@ public class MqttPublisher {
         String json = new String(message.getPayload());
         System.out.println("Received message from topic " + topic + ": " + json);
         try {
-
             if(topic.equals(Topic.loginTopic)){
                listenMessageLoginTopic(json);
             }
@@ -116,10 +118,39 @@ public class MqttPublisher {
             if(topic.equals(Topic.changePasswordTopic)){
                 listenAndUpdatePassword( json);
             }
+            if(topic.equals(Topic.deleteUserTopic)){
+                listenAndDeleteUser( json);
+            }
+            if(topic.equals(Topic.getListUserTopic)){
+
+            }
             SecurityContextHolder.clearContext();
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
             System.out.println(e.toString());
+        }
+    }
+    // Get all users
+    public void listenAndPublish
+
+    // Delete User
+    public void listenAndDeleteUser(String json) throws JsonProcessingException, MqttException {
+        DeleteUser deleteUser=objectMapper.readValue(json,DeleteUser.class);
+        boolean isValidateSuccess= jwtAuthenticationFilter.handleToken(deleteUser.getToken());
+        if(!isValidateSuccess){
+            mqttClient.publish(Topic.deleteUserTopic+"/"+deleteUser.getRealDeviceId(),setPayload(new Result<>(null,ErrorMessage.tokenExpiration,403)));
+        }else {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Users users=(Users)authentication.getPrincipal();
+            if(users.getRoles().getRole().equals("ROLE_ADMIN")){
+            Result<?> result=new Result<>(null,ErrorMessage.success,200);
+            mqttClient.publish(Topic.deleteUserTopic+"/"+deleteUser.getRealDeviceId(),setPayload(result));
+            }
+            else
+            {
+                Result<?> result=new Result<>(null,ErrorMessage.unauthorized,403);
+                mqttClient.publish(Topic.deleteUserTopic+"/"+deleteUser.getRealDeviceId(),setPayload(result));
+            }
         }
     }
     // Nghe và update password
@@ -206,7 +237,7 @@ public class MqttPublisher {
                 Users users=(Users)authentication.getPrincipal();
                 for(UserDevices userDevices:users.getDevices()){
                     if(userDevices.getDevice().getDeviceName().contains(deviceLogPowerConsumptionRequest.getDeviceName())){
-                        Result<Float> result= deviceLogService.powerConsumption(
+                        Result<List<PowerSumResponse>> result= deviceLogService.powerConsumption(
                                 deviceLogPowerConsumptionRequest.getStartDate(),
                                 deviceLogPowerConsumptionRequest.getEndDate(),
                                 deviceLogPowerConsumptionRequest.getDeviceName()
@@ -222,7 +253,53 @@ public class MqttPublisher {
     // Nghe và lưu dữ liệu device log
     public  void listenAndSaveDeviceLog(String json){
         DeviceLog deviceLog = DeviceLogMapper.mapper(json);
+        if(deviceLog.getAmpere()<=0.1)return;
         deviceLogService.save(deviceLog);
+        String keyData=deviceLog.getDeviceLogId();
+        float power=deviceLog.getAmpere()*deviceLog.getVolt();
+        List<Float> data= sensorData.computeIfAbsent(keyData, _ ->new ArrayList<>());
+        data.add(power);
+        final int size=data.size();
+        if(size>=2){
+            Float delta= (data.get(size-1)-data.get(size-2))/ data.get(size-1);
+            List<Float> deltaList = deltaMap.computeIfAbsent(keyData, _ ->new ArrayList<>());
+            if(deltaList.isEmpty()){
+                deltaMap.computeIfAbsent(keyData, _ ->new ArrayList<>()).add(delta);
+            }
+            else {
+                if(deltaList.getLast()*delta>=0){
+                    deltaMap.computeIfAbsent(keyData, _ ->new ArrayList<>()).add(delta);
+                }
+                else {
+                    float deltaSum=0;
+                    for (Float aFloat : deltaList) {
+                        deltaSum += aFloat;
+                    }
+                    if(Math.abs(deltaSum)>=Data.percentPower && power>=Data.backgroundPower){
+                        String type;
+                        String message;
+                        if(deltaSum>=Data.percentPower){
+                             type= AlertConst.Type.TurnOn.getValue();
+                             message="Turn On, Power: ";
+                        }else {
+                             type=AlertConst.Type.TurnOff.getValue();
+                             message="Turn Off, Power: ";
+                        }
+                        float powerDifference=Math.abs(data.get(size-2)-data.getFirst());
+                        alertService.save(type,message + powerDifference,keyData);
+                        System.out.println(powerDifference);
+                        // TODO: Push Notification here
+                    }
+                        List<Float> list =new ArrayList<>( sensorData.get(keyData));
+                        List<Float>lastTwo=new ArrayList<>(list.subList(size - 2, size));
+                        sensorData.get(keyData).clear();
+                        sensorData.computeIfAbsent(keyData, _ ->new ArrayList<>()).addAll(lastTwo);
+                        deltaMap.get(keyData).clear();
+                        deltaMap.computeIfAbsent(keyData, _ ->new ArrayList<>()).add(delta);
+                }
+            }
+        }
+
     }
     // Nghe và gửi dữ liệu login
     private void listenMessageLoginTopic(String json) throws JsonProcessingException, MqttException {
@@ -241,7 +318,7 @@ public class MqttPublisher {
                    usersInfo.getImageUrl(),
                    usersInfo.getFullName(),
                    usersInfo.getAddress(),
-                   user.getUsersId(),token);
+                   user.getUsersId(),token,usersInfo.getPhone());
 
            mqttClient.publish(Topic.loginTopic+"/"+ authRequest.getDeviceId(),setPayload(authResponse));}
        catch (Exception e) {
