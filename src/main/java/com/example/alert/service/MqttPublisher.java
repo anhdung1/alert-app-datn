@@ -1,9 +1,6 @@
 package com.example.alert.service;
 
-import com.example.alert.consts.AlertConst;
-import com.example.alert.consts.Data;
-import com.example.alert.consts.ErrorMessage;
-import com.example.alert.consts.Topic;
+import com.example.alert.consts.*;
 import com.example.alert.dtos.*;
 import com.example.alert.model.DeviceLog;
 import com.example.alert.model.UserDevices;
@@ -122,7 +119,7 @@ public class MqttPublisher {
                 listenAndDeleteUser( json);
             }
             if(topic.equals(Topic.getListUserTopic)){
-
+                listenAndPublishListUsers(json);
             }
             SecurityContextHolder.clearContext();
         } catch (Exception e) {
@@ -131,7 +128,22 @@ public class MqttPublisher {
         }
     }
     // Get all users
-    public void listenAndPublish
+    public void listenAndPublishListUsers(String json) throws JsonProcessingException, MqttException {
+        GetListUsers getListUsers= objectMapper.readValue(json, GetListUsers.class);
+        boolean isValidateSuccess= jwtAuthenticationFilter.handleToken(getListUsers.getToken());
+        String responseTopic=Topic.getListUserTopic + "/" + getListUsers.getRealDeviceId();
+        if(!isValidateSuccess) {
+            mqttClient.publish(responseTopic, setPayload(ErrorResultResponse.tokenExpirationResult));
+        }else{
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Users users=(Users)authentication.getPrincipal();
+            if(users.getRoles().getRole().equals("ROLE_ADMIN")){
+                mqttClient.publish(responseTopic,setPayload(usersService.getAllUsers()));
+            }else {
+                mqttClient.publish(responseTopic,setPayload(ErrorResultResponse.unauthorizedResult));
+            }
+        }
+    }
 
     // Delete User
     public void listenAndDeleteUser(String json) throws JsonProcessingException, MqttException {

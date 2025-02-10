@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Topic {
-   public final static  String loginTopic="login/client";
+    public final static  String loginTopic="login/client";
     public final static  String historyTopic="history/client";
     public final static  String deviceTopic="device/client";
     public final static  String deviceLogTopic="device-log/client";
@@ -15,6 +15,7 @@ public class Topic {
     public final static  String changePasswordTopic="edit-password/client";
     public final static  String deleteUserTopic="delete-user/client";
     public final static  String getListUserTopic= "get-list-user/client";
+    public final static  String firebaseToken="device/fcm_token";
     // Không thêm nếu không dùng
     public static List<String> getAllTopics() {
         List<String> topics = new ArrayList<>();
