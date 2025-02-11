@@ -25,6 +25,9 @@ public class Users {
     }
     @OneToOne(mappedBy = "user",fetch = FetchType.EAGER)
     private UsersInfo usersInfo;
+    @OneToMany(fetch = FetchType.EAGER,mappedBy = "user")
+    private List<FirebaseTokens> firebaseTokensList;
+
     public void setUsersId(Long usersId) {
         this.usersId = usersId;
     }

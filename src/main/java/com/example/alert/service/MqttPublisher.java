@@ -121,11 +121,18 @@ public class MqttPublisher {
             if(topic.equals(Topic.getListUserTopic)){
                 listenAndPublishListUsers(json);
             }
+            if(topic.equals(Topic.firebaseToken)){
+                listenAndSaveFirebaseToken(json);
+            }
             SecurityContextHolder.clearContext();
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
             System.out.println(e.toString());
         }
+    }
+    // Get firebase token
+    public void listenAndSaveFirebaseToken(String json){
+
     }
     // Get all users
     public void listenAndPublishListUsers(String json) throws JsonProcessingException, MqttException {
@@ -227,8 +234,8 @@ public class MqttPublisher {
         }else {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Users users=(Users)authentication.getPrincipal();
-            System.out.println(users.getRoles().getRole().equals("ROLE_TECHNICAL"));
-            if(users.getRoles().getRole().equals("ROLE_TECHNICAL")){
+            String role=users.getRoles().getRole();
+            if(role.equals("ROLE_TECHNICAL") || role.equals("ROLE_ADMIN")){
                 Result<?>result = usersService.createUser(createUserRequest.getUsername(), createUserRequest.getPassword(), createUserRequest.getPhone());
                 mqttClient.publish(createTopicResponse,setPayload(result));
             }else {
@@ -311,7 +318,6 @@ public class MqttPublisher {
                 }
             }
         }
-
     }
     // Nghe và gửi dữ liệu login
     private void listenMessageLoginTopic(String json) throws JsonProcessingException, MqttException {
