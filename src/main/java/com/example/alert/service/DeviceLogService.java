@@ -10,20 +10,19 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class DeviceLogService {
@@ -34,6 +33,37 @@ public class DeviceLogService {
     public DeviceLogService() {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+    }
+    public void convertTxtToJson() {
+        List<DeviceLog> dataList = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss-dd/MM/yy");
+        try (BufferedReader br = new BufferedReader(new FileReader(BASE_PATH+"0000000002.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] fields = line.split(";");
+
+                    String deviceLogId=fields[0];
+                    LocalDateTime createdAt=LocalDateTime.parse(fields[1],formatter);
+                    Float powerFactor=Float.parseFloat(fields[2]);;
+                    Float volt=Float.parseFloat(fields[3]);
+                    Float ampere=Float.parseFloat(fields[4]);
+                    DeviceLog deviceLog=new DeviceLog(deviceLogId,createdAt,powerFactor,volt,ampere);
+                    System.out.println(deviceLog);
+                    dataList.add(deviceLog);
+
+            }
+
+            // Chuyển đổi danh sách thành JSON
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            String jsonString = objectMapper.writeValueAsString(dataList);
+
+            // Ghi vào file JSON
+            Files.write(Paths.get(BASE_PATH+"0000000002.json"), jsonString.getBytes());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            e.getMessage();
+        }
     }
     public void mapperDeviceLog(String json){
         List<DeviceLog> deviceLogs=new ArrayList<>();

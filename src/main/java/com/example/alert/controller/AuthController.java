@@ -5,10 +5,7 @@ import com.example.alert.dtos.AuthRequest;
 import com.example.alert.dtos.AuthResponse;
 import com.example.alert.model.Users;
 import com.example.alert.model.UsersInfo;
-import com.example.alert.service.JwtUtil;
-import com.example.alert.service.MqttPublisher;
-import com.example.alert.service.Result;
-import com.example.alert.service.UsersService;
+import com.example.alert.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,6 +26,10 @@ public class AuthController {
     private JwtUtil jwtUtil;
     @Autowired
     private UsersService usersService;
+    @Autowired
+    private DeviceLogService deviceLogService;
+    @Autowired
+    private Analyzer analyzer;
     @PostMapping("login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
         try {
@@ -54,5 +55,10 @@ public class AuthController {
         }
         usersService.createUser(authRequest.getUsername(), authRequest.getPassword(),authRequest.getPhone());
         return ResponseEntity.ok("User registered successfully");
+    }
+    @GetMapping("/test")
+    public void test(){
+//        deviceLogService.convertTxtToJson();
+        analyzer.analyzer();
     }
 }

@@ -2,10 +2,7 @@ package com.example.alert.service;
 
 import com.example.alert.consts.*;
 import com.example.alert.dtos.*;
-import com.example.alert.model.DeviceLog;
-import com.example.alert.model.UserDevices;
-import com.example.alert.model.Users;
-import com.example.alert.model.UsersInfo;
+import com.example.alert.model.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.alert.data_mapper.DeviceLogMapper;
@@ -27,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MqttPublisher {
     private final String BROKER_URL = "ssl://i1731e41.ala.asia-southeast1.emqxsl.com:8883";
-    private final String CLIENT_ID = "spring-boot-client-23";
+    private final String CLIENT_ID = "spring-boot-client-25";
     @Autowired
     private DeviceLogService deviceLogService;
     @Autowired
@@ -42,6 +39,8 @@ public class MqttPublisher {
     private UsersInfoService usersInfoService;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private FirebaseTokensService firebaseTokensService;
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     private MqttClient mqttClient;
@@ -61,8 +60,7 @@ public class MqttPublisher {
         try {
             mqttClient = new MqttClient(BROKER_URL, CLIENT_ID);
             MqttConnectOptions options = new MqttConnectOptions();
-            options.setCleanSession(true);
-            options.setUserName("emqx");
+            options.setUserName("luuvandung");
             String password="dungdung";
             options.setPassword(password.toCharArray());
             mqttClient.connect(options);
@@ -121,18 +119,11 @@ public class MqttPublisher {
             if(topic.equals(Topic.getListUserTopic)){
                 listenAndPublishListUsers(json);
             }
-            if(topic.equals(Topic.firebaseToken)){
-                listenAndSaveFirebaseToken(json);
-            }
             SecurityContextHolder.clearContext();
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
             System.out.println(e.toString());
         }
-    }
-    // Get firebase token
-    public void listenAndSaveFirebaseToken(String json){
-
     }
     // Get all users
     public void listenAndPublishListUsers(String json) throws JsonProcessingException, MqttException {
@@ -269,6 +260,9 @@ public class MqttPublisher {
                 }
             }
     }
+    public void listenAndSaveDeviceLog1(){
+
+    }
     // Nghe và lưu dữ liệu device log
     public  void listenAndSaveDeviceLog(String json){
         DeviceLog deviceLog = DeviceLogMapper.mapper(json);
@@ -306,7 +300,6 @@ public class MqttPublisher {
                         }
                         float powerDifference=Math.abs(data.get(size-2)-data.getFirst());
                         alertService.save(type,message + powerDifference,keyData);
-                        System.out.println(powerDifference);
                         // TODO: Push Notification here
                     }
                         List<Float> list =new ArrayList<>( sensorData.get(keyData));
@@ -346,9 +339,10 @@ public class MqttPublisher {
     private void subscribeToTopics() {
         try {
             List<String> topics = new ArrayList<>(Topic.getAllTopics());
-            for (String topic : topics) {
-                mqttClient.subscribe(topic, 0);
-                System.out.println("Subscribed to topic: " + topic);
+            int maxIndex= Math.min(topics.size(), 9);
+            for (int i=0;i<maxIndex;i++) {
+                mqttClient.subscribe(topics.get(i), 0);
+                System.out.println("Subscribed to topic: " + topics.get(i));
             }
         } catch (MqttException e) {
             System.out.println("Error subscribing to topics: " + e.getMessage());

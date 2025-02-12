@@ -1,14 +1,15 @@
 package com.example.alert.model;
 
 import jakarta.persistence.*;
-
+@Entity
+@Table(name = "firebase_tokens")
 public class FirebaseTokens {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int firebaseTokensId;
     private String token;
     @ManyToOne
-    @JoinColumn(name = "firebase_tokens")
+    @JoinColumn(name = "users_id")
     private Users user;
 
     public int getFirebaseTokensId() {
