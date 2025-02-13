@@ -28,14 +28,14 @@ public class AlertService {
     public AlertRepository getAlertRepository() {
         return alertRepository;
     }
-    public void save(String type, String message, String deviceLogId){
+    public void save(String type, String message, String deviceLogId,LocalDateTime startTime){
         Alert alert=new Alert();
         Device device=deviceService.getDeviceRepository().findByDeviceName(deviceLogId);
         if(device!=null){
             alert.setDevice(device);
             alert.setType(type);
             alert.setMessage(message);
-            alert.setCreateAt(LocalDateTime.now());
+            alert.setCreateAt(startTime);
             alertRepository.save(alert);
         }
     }

@@ -14,9 +14,9 @@ public class Device {
     private String model;
     private String version;
     private String deviceName;
-    @OneToMany(fetch = FetchType.EAGER,mappedBy = "device")
+    @OneToMany(fetch = FetchType.EAGER,mappedBy = "device", cascade = CascadeType.REMOVE)
     private List<UserDevices>userDevices;
-    @OneToMany(mappedBy = "device")
+    @OneToMany(mappedBy = "device", cascade = CascadeType.REMOVE)
     private List<Alert> alerts;
     public Integer getDeviceId() {
         return deviceId;

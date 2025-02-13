@@ -1,5 +1,6 @@
 package com.example.alert.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
@@ -18,14 +19,15 @@ public class Users {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Roles roles;
-    @OneToMany(fetch = FetchType.EAGER,mappedBy = "user")
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.EAGER,mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<UserDevices> devices;
     public Long getUsersId() {
         return usersId;
     }
     @OneToOne(mappedBy = "user",fetch = FetchType.EAGER)
     private UsersInfo usersInfo;
-    @OneToMany(fetch = FetchType.EAGER,mappedBy = "user")
+    @OneToMany(fetch = FetchType.EAGER,mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<FirebaseTokens> firebaseTokensList;
 
     public void setUsersId(Long usersId) {

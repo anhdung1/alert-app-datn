@@ -12,7 +12,7 @@ public class Roles {
     private int rolesId;
     private String role;
     @JsonIgnore
-    @OneToMany(mappedBy = "roles")
+    @OneToMany(mappedBy = "roles", cascade = CascadeType.REMOVE)
     private List<Users> users;
     public int getRoleId() {
         return rolesId;

@@ -15,6 +15,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -30,6 +32,8 @@ public class AuthController {
     private DeviceLogService deviceLogService;
     @Autowired
     private Analyzer analyzer;
+    @Autowired
+    private FirebaseTokensService firebaseTokensService;
     @PostMapping("login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
         try {
@@ -57,8 +61,10 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully");
     }
     @GetMapping("/test")
-    public void test(){
+    public ResponseEntity<?> test(){
 //        deviceLogService.convertTxtToJson();
-        analyzer.analyzer();
+//        analyzer.sendData();
+        List<String> deviceToken=firebaseTokensService.getFirebaseTokensRepository().findFirebaseTokenByDeviceName("0000000002");
+        return ResponseEntity.ok(deviceToken);
     }
 }

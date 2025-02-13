@@ -7,11 +7,18 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +28,8 @@ public class Analyzer {
     private static final String BASE_PATH = "D://data/";
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private MqttPublisher mqttPublisher;
     public void analyzer(){
         List<Float> deviceAmpereList=new ArrayList<>();
         List<PowerSumResponse> powerSumResponseList= new ArrayList<>();
@@ -58,6 +67,16 @@ public class Analyzer {
             }
     }
     public void sendData(){
-
+        List<DeviceLog> dataList = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss-dd/MM/yy");
+        try (BufferedReader br = new BufferedReader(new FileReader(BASE_PATH+"0000000002.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                mqttPublisher.listenAndSaveDeviceLog(line);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            e.getMessage();
+        }
     }
 }

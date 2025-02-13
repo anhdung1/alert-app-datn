@@ -58,7 +58,7 @@ public class DeviceLogService {
             String jsonString = objectMapper.writeValueAsString(dataList);
 
             // Ghi vào file JSON
-            Files.write(Paths.get(BASE_PATH+"0000000002.json"), jsonString.getBytes());
+            Files.write(Paths.get(BASE_PATH+"0000000002/2024/12/15/deviceLog.json"), jsonString.getBytes());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -81,23 +81,30 @@ public class DeviceLogService {
         }
 
     }
-    public void save( DeviceLog deviceLog) {
+    public void save(DeviceLog deviceLog) {
         try {
             String year = String.valueOf(deviceLog.getCreatedAt().getYear());
             String month = String.format("%02d", deviceLog.getCreatedAt().getMonthValue());
-            String day=String.valueOf(deviceLog.getCreatedAt().getDayOfMonth());
-            String folderPath = BASE_PATH + deviceLog.getDeviceLogId() + "/" + year + "/"  + month + "/" + day;
+            String day = String.valueOf(deviceLog.getCreatedAt().getDayOfMonth());
+            String folderPath = BASE_PATH + deviceLog.getDeviceLogId() + "/" + year + "/" + month + "/" + day;
             String filePath = folderPath + "/deviceLog.json";
+
             if (!FileUtil.existsDirectories(folderPath)) {
                 FileUtil.createDirectories(folderPath);
             }
+
             File jsonFile = FileUtil.getFile(filePath);
-            List<DeviceLog> logs = new ArrayList<>();
-            if (jsonFile.exists() && jsonFile.length() > 0) {
-                logs = objectMapper.readValue(jsonFile, new TypeReference<List<DeviceLog>>() {});
+            boolean isNewFile = !jsonFile.exists();
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile, true))) {
+                if (isNewFile) {
+                    writer.write("[\n"); // Nếu file mới, bắt đầu với dấu mở mảng
+                } else {
+                    writer.write(",\n"); // Nếu file đã có dữ liệu, thêm dấu phẩy trước dòng mới
+                }
+                String jsonLog = objectMapper.writeValueAsString(deviceLog);
+                writer.write(jsonLog);
             }
-            logs.add(deviceLog);
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile, logs);
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi lưu DeviceLog: " + e.getMessage(), e);
         }

@@ -1,12 +1,12 @@
 package com.example.alert.service;
 
 import com.example.alert.consts.ErrorMessage;
+import com.example.alert.dtos.UsersResponse;
 import com.example.alert.model.Roles;
 import com.example.alert.model.Users;
 import com.example.alert.model.UsersInfo;
 import com.example.alert.repository.RolesRepository;
 import com.example.alert.repository.UsersRepository;
-import org.apache.logging.log4j.message.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,7 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -91,11 +93,21 @@ public class UsersService {
         usersRepository.save(users);
         return new Result<>(null,ErrorMessage.success,200);
     }
-    public void deleteUser(Long userId){
+    @Transactional
+    public void deleteUserByUserId(Long userId){
+        Optional<Users>user =usersRepository.findById(userId);
         usersRepository.deleteById(userId);
     }
-    public Result<List<Users>> getAllUsers(){
+    public Result<List<UsersResponse>> getAllUsers(){
         List<Users> userList = usersRepository.findAll();
-        return new Result<>(userList, ErrorMessage.success,200);
+        return new Result<>(convertToUsersResponse(userList), ErrorMessage.success,200);
+    }
+    public List<UsersResponse> convertToUsersResponse(List<Users> users){
+        List<UsersResponse> listUsersResponses = new ArrayList<>();
+        for(Users user:users){
+            UsersResponse usersResponse = new UsersResponse(user.getUsername(),user.getUsersId(),user.getRoles().getRole(),user.getUsersInfo());
+            listUsersResponses.add(usersResponse);
+        }
+        return listUsersResponses;
     }
 }

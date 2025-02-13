@@ -107,7 +107,7 @@ public class MqttPublisher2 {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Users users=(Users)authentication.getPrincipal();
             FirebaseTokens firebaseTokens =new FirebaseTokens();
-            firebaseTokens.setToken(firebaseTokensRequest.getToken());
+            firebaseTokens.setToken(firebaseTokensRequest.getFirebaseToken());
             Users setUsers=usersService.findByUsername(users.getUsername());
             firebaseTokens.setUser(setUsers);
             firebaseTokensService.getFirebaseTokensRepository().save(firebaseTokens);

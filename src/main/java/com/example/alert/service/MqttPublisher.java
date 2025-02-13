@@ -42,6 +42,8 @@ public class MqttPublisher {
     @Autowired
     private FirebaseTokensService firebaseTokensService;
     @Autowired
+    private NotificationService notificationService;
+    @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     private MqttClient mqttClient;
 
@@ -153,6 +155,7 @@ public class MqttPublisher {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Users users=(Users)authentication.getPrincipal();
             if(users.getRoles().getRole().equals("ROLE_ADMIN")){
+            usersService.deleteUserByUserId(deleteUser.getDeleteUserId());
             Result<?> result=new Result<>(null,ErrorMessage.success,200);
             mqttClient.publish(Topic.deleteUserTopic+"/"+deleteUser.getRealDeviceId(),setPayload(result));
             }
@@ -266,7 +269,7 @@ public class MqttPublisher {
     // Nghe và lưu dữ liệu device log
     public  void listenAndSaveDeviceLog(String json){
         DeviceLog deviceLog = DeviceLogMapper.mapper(json);
-        if(deviceLog.getAmpere()<=0.1)return;
+        if(deviceLog.getAmpere()<0)return;
         deviceLogService.save(deviceLog);
         String keyData=deviceLog.getDeviceLogId();
         float power=deviceLog.getAmpere()*deviceLog.getVolt();
@@ -299,8 +302,16 @@ public class MqttPublisher {
                              message="Turn Off, Power: ";
                         }
                         float powerDifference=Math.abs(data.get(size-2)-data.getFirst());
-                        alertService.save(type,message + powerDifference,keyData);
+                        alertService.save(type,message + powerDifference,keyData,deviceLog.getCreatedAt());
+                        List<String>deviceToken=firebaseTokensService.getFirebaseTokensRepository().findFirebaseTokenByDeviceName(deviceLog.getDeviceLogId());
                         // TODO: Push Notification here
+                        try{
+                            for(String token:deviceToken){
+                                notificationService.sendNotification(token,"warning",type);
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                         List<Float> list =new ArrayList<>( sensorData.get(keyData));
                         List<Float>lastTwo=new ArrayList<>(list.subList(size - 2, size));
@@ -340,7 +351,7 @@ public class MqttPublisher {
         try {
             List<String> topics = new ArrayList<>(Topic.getAllTopics());
             int maxIndex= Math.min(topics.size(), 9);
-            for (int i=0;i<maxIndex;i++) {
+            for (int i=0;i<=maxIndex;i++) {
                 mqttClient.subscribe(topics.get(i), 0);
                 System.out.println("Subscribed to topic: " + topics.get(i));
             }

@@ -9,6 +9,7 @@ public class DeleteUser {
         this.realDeviceId=realDeviceId;
         this.token=token;
     }
+    public DeleteUser(){}
     public Long getDeleteUserId() {
         return deleteUserId;
     }
