@@ -63,6 +63,7 @@ public class MqttPublisher2 {
             options.setUserName("username");
             String password="password";
             options.setPassword(password.toCharArray());
+//            options.setAutomaticReconnect(true);
             mqttClient.connect(options);
             System.out.println("Connected to MQTT broker successfully.");
             mqttClient.setCallback(new MqttCallback() {

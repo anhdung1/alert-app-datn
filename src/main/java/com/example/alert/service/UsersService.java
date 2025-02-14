@@ -67,11 +67,11 @@ public class UsersService {
         usersRepository.save(user);
         usersInfoService.saveUsersInfo(user,phone);
     }
-    public Result<?> editUserInfo(String phone, String address, String fullName, String imageUrl, String email,String username){
-        Users users=getUsersRepository().findByUsername(username);
-        if(users!=null){
-            UsersInfo usersInfoUpdate=users.getUsersInfo();
-            usersInfoUpdate.setPhone(phone  );
+    public Result<?> editUserInfo(String phone, String address, String fullName, String imageUrl, String email,Long usersId){
+        Optional<Users> users=getUsersRepository().findById(usersId);
+        if(users.isPresent()){
+            UsersInfo usersInfoUpdate=users.get().getUsersInfo();
+            usersInfoUpdate.setPhone(phone);
             usersInfoUpdate.setAddress(address);
             usersInfoUpdate.setEmail(email);
             usersInfoUpdate.setFullName(fullName);

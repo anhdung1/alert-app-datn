@@ -65,6 +65,7 @@ public class MqttPublisher {
             options.setUserName("luuvandung");
             String password="dungdung";
             options.setPassword(password.toCharArray());
+            options.setAutomaticReconnect(true);
             mqttClient.connect(options);
             System.out.println("Connected to MQTT broker successfully.");
             mqttClient.setCallback(new MqttCallback() {
@@ -190,12 +191,18 @@ public class MqttPublisher {
         else {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Users users=(Users)authentication.getPrincipal();
-                Result<?> result=usersService.editUserInfo(updateUserInfo.getPhone(),
+            long usersId=-1;
+            if(users.getRoles().getRole().equals("ROLE_ADMIN")){
+                usersId= updateUserInfo.getUsersId();
+            }else {
+                usersId=users.getUsersId();
+            }
+            Result<?> result=usersService.editUserInfo(updateUserInfo.getPhone(),
                         updateUserInfo.getAddress(),
                         updateUserInfo.getFullName(),
                         updateUserInfo.getImageUrl(),
                         updateUserInfo.getEmail(),
-                        users.getUsername());
+                        usersId);
                 mqttClient.publish(Topic.editUserTopic+"/"+updateUserInfo.getRealDeviceId(),setPayload(result));
         }
     }
@@ -291,7 +298,8 @@ public class MqttPublisher {
                     for (Float aFloat : deltaList) {
                         deltaSum += aFloat;
                     }
-                    if(Math.abs(deltaSum)>=Data.percentPower && power>=Data.backgroundPower){
+                    float powerDifference=Math.abs(data.get(size-2)-data.getFirst());
+                    if(Math.abs(deltaSum)>=Data.percentPower && powerDifference>100){
                         String type;
                         String message;
                         if(deltaSum>=Data.percentPower){
@@ -301,7 +309,7 @@ public class MqttPublisher {
                              type=AlertConst.Type.TurnOff.getValue();
                              message="Turn Off, Power: ";
                         }
-                        float powerDifference=Math.abs(data.get(size-2)-data.getFirst());
+
                         alertService.save(type,message + powerDifference,keyData,deviceLog.getCreatedAt());
                         List<String>deviceToken=firebaseTokensService.getFirebaseTokensRepository().findFirebaseTokenByDeviceName(deviceLog.getDeviceLogId());
                         // TODO: Push Notification here
