@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -56,9 +57,11 @@ public class DeviceLogService {
             // Chuyển đổi danh sách thành JSON
             objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
             String jsonString = objectMapper.writeValueAsString(dataList);
-
+            String filePath = BASE_PATH + "0000000002/2024/12/15/deviceLog.json";
+            Path path = Paths.get(filePath);
+            Files.createDirectories(path.getParent());
             // Ghi vào file JSON
-            Files.write(Paths.get(BASE_PATH+"0000000002/2024/12/15/deviceLog.json"), jsonString.getBytes());
+            Files.write(path, jsonString.getBytes());
 
         } catch (Exception e) {
             e.printStackTrace();

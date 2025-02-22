@@ -63,8 +63,8 @@ public class AuthController {
     @GetMapping("/test")
     public ResponseEntity<?> test(){
 //        deviceLogService.convertTxtToJson();
-//        analyzer.sendData();
-        List<String> deviceToken=firebaseTokensService.getFirebaseTokensRepository().findFirebaseTokenByDeviceName("0000000002");
-        return ResponseEntity.ok(deviceToken);
+        analyzer.sendData();
+//        List<String> deviceToken=firebaseTokensService.getFirebaseTokensRepository().findFirebaseTokenByDeviceName("0000000002");
+        return ResponseEntity.ok("");
     }
 }

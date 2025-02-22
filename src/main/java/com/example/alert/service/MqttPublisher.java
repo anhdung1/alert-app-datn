@@ -279,6 +279,24 @@ public class MqttPublisher {
         if(deviceLog.getAmpere()<0)return;
         deviceLogService.save(deviceLog);
         String keyData=deviceLog.getDeviceLogId();
+        if(deviceLog.getAmpere()>80){
+            List<String>deviceToken=firebaseTokensService.getFirebaseTokensRepository().findFirebaseTokenByDeviceName(deviceLog.getDeviceLogId());
+            // TODO: Push Notification here
+            try{
+                for(String token:deviceToken){
+                    notificationService.sendNotification(token,"Warning","Dòng điện cao bất thường");
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            if(sensorData.get(keyData)!=null){
+                sensorData.get(keyData).clear();
+            }
+            if(deltaMap.get(keyData)!=null) {
+                deltaMap.get(keyData).clear();
+            }
+            return;
+        }
         float power=deviceLog.getAmpere()*deviceLog.getVolt();
         List<Float> data= sensorData.computeIfAbsent(keyData, _ ->new ArrayList<>());
         data.add(power);
